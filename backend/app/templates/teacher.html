@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Teacher Console</title>
+  </head>
+  <body>
+    <h1>Teacher Recording Console</h1>
+
+    <section id="scene-controls">
+      <h2>Scene Controls</h2>
+      <label>
+        Focus line range
+        <input id="focus-start" type="number" min="1" placeholder="start line" />
+        <input id="focus-end" type="number" min="1" placeholder="end line" />
+      </label>
+
+      <label>
+        Zoom level
+        <input id="zoom-level" type="number" min="0.1" step="0.1" value="1.0" />
+      </label>
+
+      <label>
+        Spotlight blocks (comma separated)
+        <input id="spotlight-blocks" type="text" placeholder="init,loop,return" />
+      </label>
+
+      <label>
+        Transition type
+        <select id="transition-type">
+          <option value="cut">Cut</option>
+          <option value="fade">Fade</option>
+          <option value="slide">Slide</option>
+          <option value="wipe">Wipe</option>
+        </select>
+      </label>
+
+      <button id="add-scene" type="button">Add Scene</button>
+      <pre id="scene-preview">[]</pre>
+    </section>
+
+    <script src="/static/ide.js"></script>
+  </body>
+</html>

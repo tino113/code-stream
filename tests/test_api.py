@@ -10,6 +10,7 @@ def test_health():
     res = client.get('/health')
     assert res.status_code == 200
     assert res.json()['status'] == 'ok'
+    assert res.json()['phase'] == 2
 
 
 def test_register_login_and_execute():
@@ -42,3 +43,26 @@ def test_debug_agent_policy():
     payload = res.json()
     assert payload['policy'] == 'no_code_output'
     assert 'def ' not in payload['guidance']
+
+
+def test_recording_crud_endpoints():
+    create = client.post('/api/recordings', json={
+        'title': 'Lesson 1',
+        'created_by': 'teacher@example.com',
+        'events': [{'t': 0, 'type': 'recording_start'}, {'t': 1240, 'type': 'edit'}],
+        'annotations': [{'t': 1300, 'text': 'Introduce loop'}],
+    })
+    assert create.status_code == 200
+    payload = create.json()
+    recording_id = payload['id']
+
+    list_res = client.get('/api/recordings')
+    assert list_res.status_code == 200
+    assert any(item['id'] == recording_id for item in list_res.json())
+
+    get_res = client.get(f'/api/recordings/{recording_id}')
+    assert get_res.status_code == 200
+    details = get_res.json()
+    assert details['title'] == 'Lesson 1'
+    assert len(details['events']) == 2
+    assert len(details['annotations']) == 1

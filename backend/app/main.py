@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import json
 import re
 import subprocess
 import tempfile
@@ -10,10 +11,10 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi import Request
-from jose import JWTError, jwt
+from jose import jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
-from sqlalchemy import Boolean, Column, Integer, String, create_engine
+from sqlalchemy import Boolean, Column, Integer, String, Text, create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
@@ -39,6 +40,16 @@ class User(Base):
     active = Column(Boolean, default=True)
 
 
+class Recording(Base):
+    __tablename__ = "recordings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    created_by = Column(String, nullable=False)
+    events_json = Column(Text, nullable=False)
+    annotations_json = Column(Text, nullable=False, default="[]")
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -62,7 +73,14 @@ class DebugRequest(BaseModel):
     error_message: str = Field(max_length=4000)
 
 
-app = FastAPI(title="CodeStream API", version="0.1.0")
+class RecordingPayload(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+    created_by: str = Field(min_length=3, max_length=120)
+    events: list[dict]
+    annotations: list[dict] = []
+
+
+app = FastAPI(title="CodeStream API", version="0.2.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -100,7 +118,6 @@ def create_access_token(data: dict):
 
 
 def sanitize_debug_reply(text: str) -> str:
-    # Remove obvious code blocks to enforce no-code-output policy.
     text = re.sub(r"```.*?```", "[code removed]", text, flags=re.S)
     lines = [line for line in text.splitlines() if not line.strip().startswith(("def ", "class ", "import "))]
     return "\n".join(lines).strip()
@@ -108,7 +125,7 @@ def sanitize_debug_reply(text: str) -> str:
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "phase": 2}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -150,16 +167,19 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @app.post("/api/execute")
 def execute_python(payload: ExecuteRequest):
-    with tempfile.TemporaryDirectory() as temp_dir:
-        program = Path(temp_dir) / "main.py"
-        program.write_text(payload.code)
-        proc = subprocess.run(
-            ["python3", str(program)],
-            capture_output=True,
-            text=True,
-            timeout=2,
-            cwd=temp_dir,
-        )
+    try:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            program = Path(temp_dir) / "main.py"
+            program.write_text(payload.code)
+            proc = subprocess.run(
+                ["python3", str(program)],
+                capture_output=True,
+                text=True,
+                timeout=2,
+                cwd=temp_dir,
+            )
+    except subprocess.TimeoutExpired:
+        return {"stdout": "", "stderr": "Execution timed out after 2 seconds.", "exit_code": -1}
 
     output = (proc.stdout or "")[:4000]
     error = (proc.stderr or "")[:4000]
@@ -179,3 +199,47 @@ def debug_agent(payload: DebugRequest):
     )
 
     return {"guidance": sanitize_debug_reply(response), "policy": "no_code_output"}
+
+
+@app.post("/api/recordings")
+def create_recording(payload: RecordingPayload, db: Session = Depends(get_db)):
+    record = Recording(
+        title=payload.title,
+        created_by=payload.created_by,
+        events_json=json.dumps(payload.events),
+        annotations_json=json.dumps(payload.annotations),
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return {"id": record.id, "title": record.title, "created_by": record.created_by}
+
+
+@app.get("/api/recordings")
+def list_recordings(db: Session = Depends(get_db)):
+    records = db.query(Recording).order_by(Recording.id.desc()).all()
+    return [
+        {
+            "id": r.id,
+            "title": r.title,
+            "created_by": r.created_by,
+            "event_count": len(json.loads(r.events_json)),
+            "annotation_count": len(json.loads(r.annotations_json)),
+        }
+        for r in records
+    ]
+
+
+@app.get("/api/recordings/{recording_id}")
+def get_recording(recording_id: int, db: Session = Depends(get_db)):
+    rec = db.query(Recording).filter(Recording.id == recording_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    return {
+        "id": rec.id,
+        "title": rec.title,
+        "created_by": rec.created_by,
+        "events": json.loads(rec.events_json),
+        "annotations": json.loads(rec.annotations_json),
+    }

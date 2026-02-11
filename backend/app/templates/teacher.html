@@ -6,20 +6,61 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell phase2">
       <aside class="sidebar">
         <h3>Files</h3>
-        <ul>
-          <li>main.py</li>
-          <li>helpers.py</li>
+        <ul id="file-list">
+          <li><button class="file-btn active" data-file="main.py">main.py</button></li>
+          <li><button class="file-btn" data-file="helpers.py">helpers.py</button></li>
         </ul>
+
+        <h3>Recording</h3>
+        <button id="start-recording">Start</button>
+        <button id="stop-recording">Stop</button>
+        <button id="save-recording">Save</button>
+
+        <h3>Annotations</h3>
+        <input id="annotation-text" placeholder="Checkpoint note" />
+        <button id="add-annotation">Add Marker</button>
       </aside>
+
       <section class="editor-panel">
         <header>
-          <h2>Teacher IDE</h2>
+          <h2>Teacher IDE - Phase 2</h2>
           <button id="run">Run Code</button>
+          <label>Speed
+            <select id="playback-speed">
+              <option>0.5</option>
+              <option selected>1</option>
+              <option>1.5</option>
+              <option>2</option>
+              <option>4</option>
+            </select>
+          </label>
         </header>
+
         <textarea id="editor">print("Hello from teacher")</textarea>
+
+        <section class="highlight-panel">
+          <h3>Change Highlighting</h3>
+          <div>
+            <button id="mode-highlight">Amber/Green Changes</button>
+            <button id="mode-dim">Dim Unchanged</button>
+            <button id="capture-baseline">Capture Baseline</button>
+          </div>
+          <pre id="change-view">Capture a baseline, then edit code to visualize diff changes.</pre>
+        </section>
+
+        <section class="timeline-panel">
+          <h3>Timeline Editor</h3>
+          <div>
+            <button id="trim-pauses">Trim pauses > 3s</button>
+            <button id="remove-selected">Remove selected event</button>
+            <button id="play-timeline">Play timeline</button>
+          </div>
+          <ul id="timeline"></ul>
+        </section>
+
         <pre id="output">Output will appear here.</pre>
       </section>
     </div>

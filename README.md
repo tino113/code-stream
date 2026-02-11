@@ -86,7 +86,7 @@ Open:
 docker compose up --build
 ```
 
-This single command builds an image that includes app code + Python dependencies, then starts the API on port `8124`.
+The app runs on port `8124` from Docker Compose.
 
 Open:
 - `http://localhost:8124/`

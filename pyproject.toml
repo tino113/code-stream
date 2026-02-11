@@ -1,0 +1,11 @@
+[project]
+name = "code-stream"
+version = "0.1.0"
+dependencies = [
+  "Flask>=3.0.0",
+  "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+pythonpath = ["."]

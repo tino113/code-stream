@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+backend/recordings.db
+.pytest_cache/

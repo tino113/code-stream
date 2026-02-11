@@ -80,6 +80,20 @@ Open:
 - `http://localhost:8000/teacher`
 - `http://localhost:8000/student`
 
+## Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+Run this command from the repository root. It builds an image that copies the full project into `/app`, installs dependencies from `/app/requirements.txt`, and starts the API on port `8124`.
+
+Open:
+- `http://localhost:8124/`
+- `http://localhost:8124/login`
+- `http://localhost:8124/teacher`
+- `http://localhost:8124/student`
+
 ## API
 
 - `GET /health`

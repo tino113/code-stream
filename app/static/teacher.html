@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher Assistant Controls</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f9fc; color: #1d2733; }
+      .panel { background: white; border-radius: 10px; padding: 1rem 1.25rem; box-shadow: 0 2px 12px rgba(0,0,0,0.06); max-width: 720px; }
+      .row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #eceff3; }
+      .row:last-child { border-bottom: 0; }
+      .meta { margin-bottom: 1rem; }
+      button { margin-top: 1rem; padding: 0.6rem 1rem; border: 0; border-radius: 8px; background: #2563eb; color: white; }
+      .msg { margin-top: 0.75rem; font-size: 0.9rem; color: #14532d; }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h2>Experimental Assistant Controls</h2>
+      <div class="meta">Class <strong id="classId">math-101</strong> / Session <strong id="sessionId">fall-week-2</strong></div>
+      <h3>Student Access</h3>
+      <div id="flags"></div>
+      <button id="save">Save session policy</button>
+      <div class="msg" id="message"></div>
+    </div>
+
+    <script>
+      const classId = 'math-101';
+      const sessionId = 'fall-week-2';
+      const flagsContainer = document.getElementById('flags');
+      const message = document.getElementById('message');
+
+      async function load() {
+        const assistantsRes = await fetch('/api/assistants');
+        const assistants = (await assistantsRes.json()).assistants;
+
+        const configRes = await fetch(`/api/teacher/config/${classId}/${sessionId}`);
+        const config = await configRes.json();
+        const studentSettings = config.effective_enablement.student;
+
+        flagsContainer.innerHTML = assistants
+          .map(a => `
+            <div class="row">
+              <span>${a.name}</span>
+              <input type="checkbox" data-assistant="${a.assistant_id}" ${studentSettings[a.assistant_id] ? 'checked' : ''} ${a.feature_enabled ? '' : 'disabled'} />
+            </div>`)
+          .join('');
+      }
+
+      document.getElementById('save').addEventListener('click', async () => {
+        const updates = [...document.querySelectorAll('input[type="checkbox"]')].reduce((acc, input) => {
+          acc[input.dataset.assistant] = input.checked;
+          return acc;
+        }, {});
+
+        await fetch('/api/teacher/config', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            class_id: classId,
+            session_id: sessionId,
+            role_enablement: [
+              { role: 'student', assistants: updates }
+            ]
+          })
+        });
+        message.textContent = 'Saved! Session policy updated.';
+      });
+
+      load();
+    </script>
+  </body>
+</html>

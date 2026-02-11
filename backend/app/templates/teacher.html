@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Teacher IDE</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <h3>Files</h3>
+        <ul>
+          <li>main.py</li>
+          <li>helpers.py</li>
+        </ul>
+      </aside>
+      <section class="editor-panel">
+        <header>
+          <h2>Teacher IDE</h2>
+          <button id="run">Run Code</button>
+        </header>
+        <textarea id="editor">print("Hello from teacher")</textarea>
+        <pre id="output">Output will appear here.</pre>
+      </section>
+    </div>
+    <script src="/static/ide.js"></script>
+  </body>
+</html>

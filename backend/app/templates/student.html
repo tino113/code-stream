@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Student IDE</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell student">
+      <section class="editor-panel">
+        <header>
+          <h2>Student IDE</h2>
+          <button id="run">Run Code</button>
+          <button id="debug">Get Debug Hint</button>
+        </header>
+        <textarea id="editor">print("Hello from student")</textarea>
+        <pre id="output">Output will appear here.</pre>
+        <pre id="hint">Debug hints appear here.</pre>
+      </section>
+    </div>
+    <script src="/static/ide.js"></script>
+  </body>
+</html>

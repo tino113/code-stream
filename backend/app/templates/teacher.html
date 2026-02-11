@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Teacher Dashboard</title>
+    <style>
+      body { font-family: sans-serif; margin: 1.5rem; }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+      .tile { border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem; }
+      .risk-high { border-color: #cc2936; background: #fff5f5; }
+      .risk-medium { border-color: #f3a712; background: #fffbf2; }
+      .risk-low { border-color: #2b9348; background: #f6fff8; }
+      .risk-pill { display: inline-block; border-radius: 999px; padding: 0.15rem 0.6rem; font-weight: 600; background: #111; color: #fff; }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.8rem; }
+      button { cursor: pointer; border: 0; border-radius: 6px; padding: 0.45rem 0.65rem; }
+      button[data-action="hint"] { background: #1d4ed8; color: white; }
+      button[data-action="checkpoint"] { background: #047857; color: white; }
+      button[data-action="request_snippet_metadata"] { background: #6d28d9; color: white; }
+      ul { margin-top: 0.5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Teacher Dashboard — Session {{ session.session_id }}</h1>
+    <p>Classroom: {{ session.classroom_id }}</p>
+
+    <div class="grid">
+      {% for student in students %}
+      {% set risk_class = 'risk-low' %}
+      {% if student.risk_score >= 60 %}
+        {% set risk_class = 'risk-high' %}
+      {% elif student.risk_score >= 30 %}
+        {% set risk_class = 'risk-medium' %}
+      {% endif %}
+      <article class="tile {{ risk_class }}" id="student-{{ student.student_id }}">
+        <h3>{{ student.display_name }}</h3>
+        <div class="risk-pill">Risk {{ student.risk_score }}</div>
+        <ul>
+          <li>Stale success: {{ student.indicators.stale_success }}</li>
+          <li>Repeated traceback streak: {{ student.indicators.same_traceback_streak }}</li>
+          <li>No edits after error: {{ student.indicators.no_edits_after_error }}</li>
+        </ul>
+
+        <div class="actions">
+          <button data-student-id="{{ student.student_id }}" data-action="hint">Send hint prompt</button>
+          <button data-student-id="{{ student.student_id }}" data-action="checkpoint">Push checkpoint</button>
+          <button data-student-id="{{ student.student_id }}" data-action="request_snippet_metadata">Request snippet metadata</button>
+        </div>
+      </article>
+      {% endfor %}
+    </div>
+
+    <script>
+      async function sendAction(studentId, action) {
+        const response = await fetch(`/api/sessions/{{ session.session_id }}/students/${studentId}/interventions/${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(action === 'request_snippet_metadata' ? { include_code: false } : {})
+        });
+        if (!response.ok) {
+          alert('Failed to send intervention');
+          return;
+        }
+        alert(`Sent ${action} to ${studentId}`);
+      }
+
+      for (const button of document.querySelectorAll('button[data-action]')) {
+        button.addEventListener('click', () => sendAction(button.dataset.studentId, button.dataset.action));
+      }
+    </script>
+  </body>
+</html>

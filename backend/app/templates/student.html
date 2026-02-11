@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Student Debug Assistant</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; }
+      .hint-checklist { list-style: none; padding: 0; }
+      .hint-checklist li { border: 1px solid #ddd; border-radius: 6px; margin-bottom: 0.75rem; padding: 0.75rem; }
+      .hint-checklist li strong { display: inline-block; text-transform: capitalize; margin-bottom: 0.4rem; }
+      .hint-checklist li.completed { border-color: #7ab97a; background: #f4fff4; }
+      .hint-meta { color: #666; margin-bottom: 0.8rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Guided Debug Hints</h1>
+    <form id="debug-form">
+      <input id="student-id" placeholder="Student ID" required />
+      <input id="error" placeholder="Error message" required />
+      <input id="attempted-fix" placeholder="Attempted fix (optional)" />
+      <button type="submit">Get Hint Stages</button>
+    </form>
+
+    <div class="hint-meta" id="hint-meta"></div>
+    <ul id="hint-stages" class="hint-checklist"></ul>
+
+    <script src="/static/ide.js"></script>
+  </body>
+</html>

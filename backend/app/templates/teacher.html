@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teacher Timeline</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem; }
+      .controls { display: grid; gap: .75rem; max-width: 700px; }
+      .row { display: flex; gap: .5rem; align-items: center; }
+      .timeline { margin-top: 1.5rem; border: 1px solid #ddd; padding: 1rem; border-radius: .5rem; }
+      button { padding: .4rem .8rem; }
+      input, select { padding: .4rem; min-width: 180px; }
+      #status { color: #555; font-size: .9rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Branch-aware Timeline</h1>
+    <div class="controls">
+      <div class="row">
+        <label for="branch-select">Current branch</label>
+        <select id="branch-select"></select>
+        <button id="switch-branch">Switch</button>
+      </div>
+
+      <div class="row">
+        <input id="new-branch-name" placeholder="new branch name" />
+        <button id="create-branch">Create branch</button>
+      </div>
+
+      <div class="row">
+        <label for="merge-source">Merge from</label>
+        <select id="merge-source"></select>
+        <button id="merge-branch">Merge into current</button>
+      </div>
+
+      <div class="row">
+        <input id="intent-label" placeholder="Pedagogical intent (e.g. clarify loops)" />
+        <button id="save-intent">Label next event</button>
+      </div>
+
+      <p id="status">No recording loaded</p>
+    </div>
+
+    <div class="timeline">
+      <strong>Timeline events</strong>
+      <ul id="timeline-events"></ul>
+    </div>
+
+    <script src="{{ url_for('static', filename='ide.js') }}"></script>
+  </body>
+</html>

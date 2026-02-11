@@ -78,3 +78,28 @@ def test_render_jobs_reject_invalid_scene_payload(tmp_path: Path):
 
     assert render.status == 400
     assert "focus_line_range" in render.body["error"]
+
+
+def test_recordings_reject_null_scenes(tmp_path: Path):
+    app = App(store=RecordingStore(db_path=tmp_path / "recordings.db"))
+
+    created = app.handle(
+        "POST",
+        "/api/recordings",
+        {"events": [{"t": 1}], "scenes": None},
+    )
+
+    assert created.status == 400
+    assert created.body["error"] == "scenes must be a list"
+
+
+def test_render_jobs_use_recording_scenes_when_scene_metadata_omitted(tmp_path: Path):
+    app = App(store=RecordingStore(db_path=tmp_path / "recordings.db"))
+
+    created = app.handle("POST", "/api/recordings", {"events": [{"t": 1}], "scenes": [_sample_scene()]})
+
+    render = app.handle("POST", "/api/render-jobs", {"recording_id": created.body["id"]})
+
+    assert render.status == 201
+    assert render.body["render_plan"]["scene_count"] == 1
+    assert render.body["render_plan"]["timeline"][0]["transition_type"] == "fade"

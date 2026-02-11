@@ -99,9 +99,9 @@ def _validate_scene(scene: dict[str, Any]) -> str | None:
     return None
 
 
-def _validate_scenes(scenes: Any) -> str | None:
+def _validate_scenes(scenes: Any, *, allow_none: bool = False) -> str | None:
     if scenes is None:
-        return None
+        return None if allow_none else "scenes must be a list"
     if not isinstance(scenes, list):
         return "scenes must be a list"
     for idx, scene in enumerate(scenes):
@@ -163,7 +163,7 @@ class App:
                 return Response(404, {"error": "recording not found"})
 
             scene_metadata = payload.get("scene_metadata")
-            err = _validate_scenes(scene_metadata)
+            err = _validate_scenes(scene_metadata, allow_none=True)
             if err:
                 return Response(400, {"error": err})
 

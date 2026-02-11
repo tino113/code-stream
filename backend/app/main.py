@@ -80,7 +80,7 @@ class RecordingPayload(BaseModel):
     annotations: list[dict] = []
 
 
-app = FastAPI(title="CodeStream API", version="0.2.0")
+app = FastAPI(title="CodeStream API", version="0.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -125,12 +125,17 @@ def sanitize_debug_reply(text: str) -> str:
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "phase": 2}
+    return {"status": "ok", "phase": 2, "ui": "bootstrap+monaco"}
 
 
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/login", response_class=HTMLResponse)
+def login_page(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
 
 
 @app.get("/teacher", response_class=HTMLResponse)
@@ -193,9 +198,9 @@ def debug_agent(payload: DebugRequest):
     response = (
         "I can help you debug without giving the final code.\n"
         f"1) Error meaning: {error.splitlines()[0] if error else 'No error text supplied.'}\n"
-        "2) Look near the line mentioned in the traceback and compare variable names carefully.\n"
-        "3) Add small print() checks before the failing line to inspect values and types.\n"
-        "4) Re-run after one change at a time and note what changed."
+        "2) Check the traceback line, then inspect variable naming and indentation nearby.\n"
+        "3) Add small print() checks before the failing line to inspect values/types.\n"
+        "4) Re-run after one change at a time and compare outputs."
     )
 
     return {"guidance": sanitize_debug_reply(response), "policy": "no_code_output"}
@@ -243,3 +248,24 @@ def get_recording(recording_id: int, db: Session = Depends(get_db)):
         "events": json.loads(rec.events_json),
         "annotations": json.loads(rec.annotations_json),
     }
+
+
+@app.get("/api/recordings/{recording_id}/suggest-annotations")
+def suggest_annotations(recording_id: int, db: Session = Depends(get_db)):
+    rec = db.query(Recording).filter(Recording.id == recording_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    events = json.loads(rec.events_json)
+    suggestions = []
+    for event in events:
+        if event.get("type") in {"run", "file_switch"}:
+            suggestions.append(
+                {
+                    "t": event.get("t", 0),
+                    "text": f"Checkpoint: {event.get('type')} in {event.get('file', 'current file')}",
+                    "file": event.get("file", "main.py"),
+                }
+            )
+
+    return {"recording_id": recording_id, "suggestions": suggestions[:10], "source": "heuristic_ai_placeholder"}

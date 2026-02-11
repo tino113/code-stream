@@ -1,29 +1,66 @@
-# CodeStream - Phase 2 (Live Teaching Features)
+# CodeStream - Phase 2 (UI Upgrade + Live Teaching)
 
-This repository now includes a Phase 2 implementation on top of Phase 1.
+This build upgrades the platform UI using **Bootstrap 5** and **Monaco Editor** (minimap-enabled), and aligns the implementation more closely with the product description.
 
-## Implemented
+## Implemented now
 
-### Phase 1 foundation
-- FastAPI backend with auth endpoints
-- Teacher and Student IDE pages
-- Python code execution endpoint
-- AI debug-hint endpoint with no-code-output policy
+### Platform + access
+- Web-based teacher/student pages
+- Dedicated login page (`/login`) with register/login actions
+- Role-based authentication endpoints
 
-### Phase 2 live teaching features
-- Change highlighting system with two modes:
-  - highlight changed lines in amber/green
+### Teacher IDE (Phase 2)
+- Monaco-powered editor with minimap
+- File switching
+- Change emphasis modes:
+  - highlight changed lines
   - dim unchanged lines
-- Live recording system for teacher IDE:
-  - records edit events
-  - records file navigation events
-  - records run events with timestamps
-- Timeline editing:
-  - remove selected events
-  - trim pauses longer than 3s
-  - playback speed controls (0.5x to 4x)
-- Manual timestamp + annotation markers
-- Recording persistence API (`/api/recordings`)
+- Live recording of edit/file-switch/run events with timestamps
+- Timeline tools:
+  - remove selected event
+  - trim long pauses
+  - playback speed control (0.5x–4x)
+- Manual annotations
+- Suggested annotations endpoint (`/api/recordings/{id}/suggest-annotations`) as AI-assist placeholder
+- Theme toggle (light/dark)
+- Font size control
+- Whitespace visibility toggle
+
+### Student IDE
+- Simplified Monaco editor UI
+- Run code
+- AI debug assistant endpoint with strict hint-only/no-code-output policy
+
+### Backend
+- Health endpoint
+- Auth endpoints
+- Python execution endpoint with timeout guard
+- Debug endpoint
+- Recordings create/list/get endpoints + suggestion endpoint
+
+## Plan check vs provided product description
+
+### Covered in this phase
+- ✅ Login flow for teachers/students
+- ✅ Teacher IDE optimized for coding demonstration
+- ✅ Diff highlighting / dimming modes
+- ✅ Live recording and timeline editing basics
+- ✅ Manual annotation markers
+- ✅ Minimap support
+- ✅ Theme + font size + whitespace visibility controls
+- ✅ Student debug guidance with no-code-output policy
+- ✅ Python support baseline
+
+### Not fully implemented yet (next phases)
+- ❌ Production-grade auth/session management (refresh tokens, secure cookies)
+- ❌ Secure containerized sandboxing with strict resource/network isolation
+- ❌ Error/backspace removal as semantic post-processing (currently manual timeline editing)
+- ❌ Automatic AI timestamping via external LLM API (currently heuristic placeholder)
+- ❌ Video rendering pipeline + TTS + voiceover auto-sync
+- ❌ Class enrollment workflows and role-scoped data models
+- ❌ Multi-language execution support (JavaScript and more)
+- ❌ GUI execution support (pygame/tkinter/p5.js)
+- ❌ S3/Postgres production infrastructure
 
 ## Run locally
 
@@ -36,6 +73,7 @@ uvicorn backend.app.main:app --reload
 
 Open:
 - `http://localhost:8000/`
+- `http://localhost:8000/login`
 - `http://localhost:8000/teacher`
 - `http://localhost:8000/student`
 
@@ -49,8 +87,9 @@ Open:
 - `POST /api/recordings`
 - `GET /api/recordings`
 - `GET /api/recordings/{id}`
+- `GET /api/recordings/{id}/suggest-annotations`
 
-## Test
+## Tests
 
 ```bash
 pytest

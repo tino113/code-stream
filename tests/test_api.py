@@ -11,6 +11,14 @@ def test_health():
     assert res.status_code == 200
     assert res.json()['status'] == 'ok'
     assert res.json()['phase'] == 2
+    assert res.json()['ui'] == 'bootstrap+monaco'
+
+
+def test_pages_render():
+    assert client.get('/').status_code == 200
+    assert client.get('/login').status_code == 200
+    assert client.get('/teacher').status_code == 200
+    assert client.get('/student').status_code == 200
 
 
 def test_register_login_and_execute():
@@ -45,11 +53,16 @@ def test_debug_agent_policy():
     assert 'def ' not in payload['guidance']
 
 
-def test_recording_crud_endpoints():
+def test_recording_crud_endpoints_and_suggestions():
     create = client.post('/api/recordings', json={
         'title': 'Lesson 1',
         'created_by': 'teacher@example.com',
-        'events': [{'t': 0, 'type': 'recording_start'}, {'t': 1240, 'type': 'edit'}],
+        'events': [
+            {'t': 0, 'type': 'recording_start'},
+            {'t': 1240, 'type': 'edit'},
+            {'t': 2310, 'type': 'run', 'file': 'main.py'},
+            {'t': 3000, 'type': 'file_switch', 'file': 'helpers.py'},
+        ],
         'annotations': [{'t': 1300, 'text': 'Introduce loop'}],
     })
     assert create.status_code == 200
@@ -64,5 +77,10 @@ def test_recording_crud_endpoints():
     assert get_res.status_code == 200
     details = get_res.json()
     assert details['title'] == 'Lesson 1'
-    assert len(details['events']) == 2
+    assert len(details['events']) == 4
     assert len(details['annotations']) == 1
+
+    suggestions_res = client.get(f'/api/recordings/{recording_id}/suggest-annotations')
+    assert suggestions_res.status_code == 200
+    suggestions = suggestions_res.json()['suggestions']
+    assert len(suggestions) >= 1

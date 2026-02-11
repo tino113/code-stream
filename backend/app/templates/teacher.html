@@ -1,69 +1,107 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Teacher IDE</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
   </head>
-  <body>
-    <div class="app-shell phase2">
-      <aside class="sidebar">
-        <h3>Files</h3>
-        <ul id="file-list">
-          <li><button class="file-btn active" data-file="main.py">main.py</button></li>
-          <li><button class="file-btn" data-file="helpers.py">helpers.py</button></li>
-        </ul>
+  <body class="cs-bg">
+    <nav class="navbar navbar-dark cs-nav px-3">
+      <a class="navbar-brand fw-bold" href="/">CodeStream Teacher IDE</a>
+      <div class="d-flex gap-2">
+        <button class="btn btn-sm btn-outline-light" id="theme-toggle">Toggle Theme</button>
+        <select class="form-select form-select-sm" id="font-size" style="width:120px">
+          <option value="12">12px</option><option value="14" selected>14px</option><option value="16">16px</option><option value="18">18px</option>
+        </select>
+      </div>
+    </nav>
 
-        <h3>Recording</h3>
-        <button id="start-recording">Start</button>
-        <button id="stop-recording">Stop</button>
-        <button id="save-recording">Save</button>
+    <div class="container-fluid py-3">
+      <div class="row g-3">
+        <aside class="col-lg-3">
+          <div class="card shadow-sm h-100">
+            <div class="card-body vstack gap-3">
+              <div>
+                <h6 class="fw-bold">Files</h6>
+                <div class="list-group" id="file-list">
+                  <button class="list-group-item list-group-item-action active file-btn" data-file="main.py">main.py</button>
+                  <button class="list-group-item list-group-item-action file-btn" data-file="helpers.py">helpers.py</button>
+                </div>
+              </div>
 
-        <h3>Annotations</h3>
-        <input id="annotation-text" placeholder="Checkpoint note" />
-        <button id="add-annotation">Add Marker</button>
-      </aside>
+              <div>
+                <h6 class="fw-bold">Editor controls</h6>
+                <div class="d-grid gap-2">
+                  <button id="capture-baseline" class="btn btn-outline-secondary btn-sm">Capture Baseline</button>
+                  <button id="mode-highlight" class="btn btn-outline-warning btn-sm">Highlight Changes</button>
+                  <button id="mode-dim" class="btn btn-outline-info btn-sm">Dim Unchanged</button>
+                  <button id="toggle-whitespace" class="btn btn-outline-secondary btn-sm">Toggle Whitespace</button>
+                </div>
+              </div>
 
-      <section class="editor-panel">
-        <header>
-          <h2>Teacher IDE - Phase 2</h2>
-          <button id="run">Run Code</button>
-          <label>Speed
-            <select id="playback-speed">
-              <option>0.5</option>
-              <option selected>1</option>
-              <option>1.5</option>
-              <option>2</option>
-              <option>4</option>
-            </select>
-          </label>
-        </header>
+              <div>
+                <h6 class="fw-bold">Recording</h6>
+                <div class="d-grid gap-2">
+                  <button id="start-recording" class="btn btn-success btn-sm">Start</button>
+                  <button id="stop-recording" class="btn btn-secondary btn-sm">Stop</button>
+                  <button id="save-recording" class="btn btn-primary btn-sm">Save</button>
+                  <button id="suggest-annotations" class="btn btn-outline-primary btn-sm">AI Suggest Markers</button>
+                </div>
+              </div>
 
-        <textarea id="editor">print("Hello from teacher")</textarea>
-
-        <section class="highlight-panel">
-          <h3>Change Highlighting</h3>
-          <div>
-            <button id="mode-highlight">Amber/Green Changes</button>
-            <button id="mode-dim">Dim Unchanged</button>
-            <button id="capture-baseline">Capture Baseline</button>
+              <div>
+                <h6 class="fw-bold">Annotations</h6>
+                <input id="annotation-text" class="form-control form-control-sm" placeholder="Checkpoint note" />
+                <button id="add-annotation" class="btn btn-outline-dark btn-sm mt-2 w-100">Add Marker</button>
+              </div>
+            </div>
           </div>
-          <pre id="change-view">Capture a baseline, then edit code to visualize diff changes.</pre>
-        </section>
+        </aside>
 
-        <section class="timeline-panel">
-          <h3>Timeline Editor</h3>
-          <div>
-            <button id="trim-pauses">Trim pauses > 3s</button>
-            <button id="remove-selected">Remove selected event</button>
-            <button id="play-timeline">Play timeline</button>
+        <section class="col-lg-9">
+          <div class="card shadow-sm">
+            <div class="card-body">
+              <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <button id="run" class="btn btn-primary btn-sm">Run Code</button>
+                <button id="trim-pauses" class="btn btn-outline-secondary btn-sm">Trim pauses > 3s</button>
+                <button id="remove-selected" class="btn btn-outline-danger btn-sm">Remove selected event</button>
+                <button id="play-timeline" class="btn btn-outline-success btn-sm">Play timeline</button>
+                <select class="form-select form-select-sm" id="playback-speed" style="width:130px">
+                  <option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option><option value="4">4x</option>
+                </select>
+              </div>
+
+              <div id="editor" class="editor-surface"></div>
+
+              <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="fw-bold">Change Highlight Preview</h6>
+                      <pre id="change-view" class="mb-0">Capture a baseline, then edit code to visualize changes.</pre>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="card h-100">
+                    <div class="card-body">
+                      <h6 class="fw-bold">Timeline</h6>
+                      <ul id="timeline" class="mb-0"></ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <pre id="output" class="mt-3 mb-0">Output will appear here.</pre>
+            </div>
           </div>
-          <ul id="timeline"></ul>
         </section>
-
-        <pre id="output">Output will appear here.</pre>
-      </section>
+      </div>
     </div>
+
     <script src="/static/ide.js"></script>
   </body>
 </html>

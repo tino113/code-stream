@@ -86,7 +86,7 @@ Open:
 docker compose up --build
 ```
 
-The app runs on port `8124` from Docker Compose.
+Run this command from the repository root. It builds an image that copies the full project into `/app`, installs dependencies from `/app/requirements.txt`, and starts the API on port `8124`.
 
 Open:
 - `http://localhost:8124/`

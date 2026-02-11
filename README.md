@@ -34,6 +34,18 @@ This build adds a dark-first interface and introduces Phase 3 backend capabiliti
   - `POST /api/voiceover/tts`
   - `POST /api/voiceover/auto-sync`
 
+
+## UI benchmark notes (what we changed)
+
+The IDE layout has been redesigned using common patterns from modern web IDEs (e.g., VS Code Web / GitHub Codespaces / Replit style layouts):
+- activity rail on the far left for primary work modes
+- persistent explorer sidebar for files and controls
+- tab-like editor header and bottom status bar
+- split inspector panels for timeline/change-preview/output
+- darker, lower-contrast surfaces with clearer accent hierarchy
+
+This preserves functionality while making the interface feel closer to production online IDE experiences.
+
 ## Phase check against product description
 
 ### Covered now

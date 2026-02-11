@@ -8,12 +8,14 @@
     <link rel="stylesheet" href="/static/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
   </head>
-  <body class="cs-bg">
+  <body class="cs-bg dark-mode">
     <nav class="navbar navbar-dark cs-nav px-3">
       <a class="navbar-brand fw-bold" href="/">CodeStream Student IDE</a>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" id="theme-toggle">Toggle Theme</button>
-      </div>
+      <select class="form-select form-select-sm" id="theme-select" style="width:160px">
+        <option value="dark" selected>Dark</option>
+        <option value="light">Light</option>
+        <option value="contrast">High Contrast</option>
+      </select>
     </nav>
 
     <main class="container py-3">

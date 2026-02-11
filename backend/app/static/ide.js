@@ -15,6 +15,7 @@ const state = {
   editorTheme: 'vs-dark',
   editorFontSize: 14,
   monacoEditor: null,
+  lastRecordingId: null,
 };
 
 function nowMs() {
@@ -24,17 +25,11 @@ function nowMs() {
 
 function currentCode() {
   if (state.monacoEditor) return state.monacoEditor.getValue();
-  const fallback = document.getElementById('editor');
-  return fallback?.value ?? '';
+  return '';
 }
 
 function setCode(value) {
-  if (state.monacoEditor) {
-    state.monacoEditor.setValue(value);
-    return;
-  }
-  const fallback = document.getElementById('editor');
-  if (fallback) fallback.value = value;
+  if (state.monacoEditor) state.monacoEditor.setValue(value);
 }
 
 function addEvent(type, detail = {}) {
@@ -184,20 +179,59 @@ async function saveRecording() {
     body: JSON.stringify({ title, created_by: 'teacher@local', events: state.events, annotations: state.annotations }),
   });
   const data = await res.json();
+  state.lastRecordingId = data.id;
   setOutput(`Saved recording #${data.id} (${state.events.length} events, ${state.annotations.length} annotations)`);
 }
 
 async function suggestAnnotations() {
-  const recordingIdText = (document.getElementById('output')?.textContent || '').match(/Saved recording #(\d+)/)?.[1];
-  if (!recordingIdText) {
+  if (!state.lastRecordingId) {
     setOutput('Save a recording first, then request AI suggestions.');
     return;
   }
 
-  const res = await fetch(`/api/recordings/${recordingIdText}/suggest-annotations`);
+  const res = await fetch(`/api/recordings/${state.lastRecordingId}/suggest-annotations`);
   const data = await res.json();
   state.annotations = data.suggestions || [];
   setOutput(`AI suggested ${state.annotations.length} markers. Add/adjust them as needed.`);
+}
+
+async function generateTts() {
+  const text = document.getElementById('tts-text')?.value || '';
+  if (!text.trim()) return;
+  const res = await fetch('/api/voiceover/tts', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, voice: 'alloy' }),
+  });
+  const data = await res.json();
+  setOutput(`TTS generated: ${data.audio_url} (${data.duration_seconds}s)`);
+}
+
+async function autoSyncVoiceover() {
+  if (!state.lastRecordingId) {
+    setOutput('Save a recording first, then run auto-sync.');
+    return;
+  }
+  const text = document.getElementById('tts-text')?.value || '';
+  const chunks = text.split('.').map((part) => part.trim()).filter(Boolean).map((part) => ({ text: part }));
+  const res = await fetch('/api/voiceover/auto-sync', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recording_id: state.lastRecordingId, transcript_chunks: chunks }),
+  });
+  const data = await res.json();
+  setOutput(`Auto-sync created ${data.segments.length} aligned segments.`);
+}
+
+async function renderVideo() {
+  if (!state.lastRecordingId) {
+    setOutput('Save a recording first, then render video.');
+    return;
+  }
+  const res = await fetch('/api/render-jobs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recording_id: state.lastRecordingId, format: 'mp4' }),
+  });
+  const data = await res.json();
+  setOutput(`Render ${data.status}: ${data.output_url}`);
 }
 
 function playTimeline() {
@@ -213,19 +247,23 @@ function playTimeline() {
   });
 }
 
-function toggleTheme() {
-  document.body.classList.toggle('dark-mode');
-  state.editorTheme = state.editorTheme === 'vs-dark' ? 'vs' : 'vs-dark';
-  if (state.monacoEditor && window.monaco) {
-    window.monaco.editor.setTheme(state.editorTheme);
+function applyTheme(theme) {
+  document.body.classList.remove('dark-mode', 'high-contrast');
+  if (theme === 'dark') {
+    document.body.classList.add('dark-mode');
+    state.editorTheme = 'vs-dark';
+  } else if (theme === 'contrast') {
+    document.body.classList.add('high-contrast');
+    state.editorTheme = 'hc-black';
+  } else {
+    state.editorTheme = 'vs';
   }
+  if (state.monacoEditor && window.monaco) window.monaco.editor.setTheme(state.editorTheme);
 }
 
 function toggleWhitespace() {
   state.showWhitespace = !state.showWhitespace;
-  if (state.monacoEditor) {
-    state.monacoEditor.updateOptions({ renderWhitespace: state.showWhitespace ? 'all' : 'none' });
-  }
+  if (state.monacoEditor) state.monacoEditor.updateOptions({ renderWhitespace: state.showWhitespace ? 'all' : 'none' });
 }
 
 function setFontSize() {
@@ -298,17 +336,21 @@ function bindTeacherFeatures() {
   document.getElementById('mode-dim')?.addEventListener('click', () => { state.diffMode = 'dim'; renderDiff(); });
   document.getElementById('toggle-whitespace')?.addEventListener('click', toggleWhitespace);
   document.getElementById('suggest-annotations')?.addEventListener('click', suggestAnnotations);
+  document.getElementById('generate-tts')?.addEventListener('click', generateTts);
+  document.getElementById('auto-sync')?.addEventListener('click', autoSyncVoiceover);
+  document.getElementById('render-video')?.addEventListener('click', renderVideo);
   document.querySelectorAll('.file-btn').forEach((btn) => btn.addEventListener('click', () => switchFile(btn.dataset.file)));
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('run')?.addEventListener('click', runCode);
   document.getElementById('debug')?.addEventListener('click', getHint);
-  document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
   document.getElementById('font-size')?.addEventListener('change', setFontSize);
+  document.getElementById('theme-select')?.addEventListener('change', (e) => applyTheme(e.target.value));
   document.getElementById('register-btn')?.addEventListener('click', () => registerAndLogin('register'));
   document.getElementById('login-btn')?.addEventListener('click', () => registerAndLogin('login'));
 
   if (document.getElementById('start-recording')) bindTeacherFeatures();
+  applyTheme(document.getElementById('theme-select')?.value || 'dark');
   initMonacoEditor();
 });

@@ -1,66 +1,57 @@
-# CodeStream - Phase 2 (UI Upgrade + Live Teaching)
+# CodeStream - Phase 3 (Dark Mode + Advanced Media Pipeline Foundations)
 
-This build upgrades the platform UI using **Bootstrap 5** and **Monaco Editor** (minimap-enabled), and aligns the implementation more closely with the product description.
+This build adds a dark-first interface and introduces Phase 3 backend capabilities for rendering, voiceover generation, and auto-sync planning.
 
-## Implemented now
+## Implemented
 
-### Platform + access
-- Web-based teacher/student pages
-- Dedicated login page (`/login`) with register/login actions
-- Role-based authentication endpoints
+### UI / UX
+- Bootstrap 5 + Monaco editor interfaces
+- **Dark mode default** on all pages
+- Theme selector with light / dark / high-contrast
+- Monaco minimap, font-size control, whitespace visibility toggle
 
-### Teacher IDE (Phase 2)
-- Monaco-powered editor with minimap
-- File switching
-- Change emphasis modes:
-  - highlight changed lines
-  - dim unchanged lines
-- Live recording of edit/file-switch/run events with timestamps
-- Timeline tools:
-  - remove selected event
-  - trim long pauses
-  - playback speed control (0.5x–4x)
-- Manual annotations
-- Suggested annotations endpoint (`/api/recordings/{id}/suggest-annotations`) as AI-assist placeholder
-- Theme toggle (light/dark)
-- Font size control
-- Whitespace visibility toggle
+### Teacher IDE (Phase 2 + 3)
+- Live recording of edits/run/file-switch events
+- Timeline editing (trim pauses, remove events, playback speed)
+- Manual annotation markers + suggestion endpoint integration
+- **Phase 3 actions**:
+  - generate TTS voiceover
+  - auto-sync voiceover chunks to timeline anchors
+  - create render jobs for final video output
 
 ### Student IDE
-- Simplified Monaco editor UI
-- Run code
-- AI debug assistant endpoint with strict hint-only/no-code-output policy
+- Simplified Monaco IDE
+- Run code and receive no-code-output debug guidance
 
-### Backend
-- Health endpoint
-- Auth endpoints
-- Python execution endpoint with timeout guard
-- Debug endpoint
-- Recordings create/list/get endpoints + suggestion endpoint
+### Backend APIs
+- Auth: register/login
+- Execution: `/api/execute`
+- Debug guidance: `/api/debug`
+- Recordings: create/list/get + suggest annotations
+- **Phase 3 media APIs**:
+  - `POST /api/render-jobs`
+  - `GET /api/render-jobs/{id}`
+  - `POST /api/voiceover/tts`
+  - `POST /api/voiceover/auto-sync`
 
-## Plan check vs provided product description
+## Phase check against product description
 
-### Covered in this phase
-- ✅ Login flow for teachers/students
-- ✅ Teacher IDE optimized for coding demonstration
-- ✅ Diff highlighting / dimming modes
-- ✅ Live recording and timeline editing basics
-- ✅ Manual annotation markers
-- ✅ Minimap support
-- ✅ Theme + font size + whitespace visibility controls
-- ✅ Student debug guidance with no-code-output policy
-- ✅ Python support baseline
+### Covered now
+- ✅ Teacher/student web access with login page
+- ✅ Teacher IDE with diff highlighting, dim mode, minimap
+- ✅ Dark mode and multiple theme options
+- ✅ Font-size and whitespace controls
+- ✅ Timeline recording/editing + manual and suggested annotations
+- ✅ Phase-3 API foundations for rendering, TTS, and voiceover auto-sync
+- ✅ Student hint-only debug workflow (no code output)
 
-### Not fully implemented yet (next phases)
-- ❌ Production-grade auth/session management (refresh tokens, secure cookies)
-- ❌ Secure containerized sandboxing with strict resource/network isolation
-- ❌ Error/backspace removal as semantic post-processing (currently manual timeline editing)
-- ❌ Automatic AI timestamping via external LLM API (currently heuristic placeholder)
-- ❌ Video rendering pipeline + TTS + voiceover auto-sync
-- ❌ Class enrollment workflows and role-scoped data models
-- ❌ Multi-language execution support (JavaScript and more)
-- ❌ GUI execution support (pygame/tkinter/p5.js)
-- ❌ S3/Postgres production infrastructure
+### Still pending for later phases
+- ❌ Real background render workers + FFmpeg composition
+- ❌ Real TTS provider integration (OpenAI/ElevenLabs)
+- ❌ Production auto-sync algorithm and quality scoring
+- ❌ Hardened sandbox isolation for code execution
+- ❌ Class enrollment/teacher-student data model
+- ❌ JavaScript and GUI runtime support
 
 ## Run locally
 
@@ -88,6 +79,10 @@ Open:
 - `GET /api/recordings`
 - `GET /api/recordings/{id}`
 - `GET /api/recordings/{id}/suggest-annotations`
+- `POST /api/render-jobs`
+- `GET /api/render-jobs/{id}`
+- `POST /api/voiceover/tts`
+- `POST /api/voiceover/auto-sync`
 
 ## Tests
 

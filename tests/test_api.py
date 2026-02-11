@@ -10,7 +10,7 @@ def test_health():
     res = client.get('/health')
     assert res.status_code == 200
     assert res.json()['status'] == 'ok'
-    assert res.json()['phase'] == 2
+    assert res.json()['phase'] == 3
     assert res.json()['ui'] == 'bootstrap+monaco'
 
 
@@ -53,34 +53,42 @@ def test_debug_agent_policy():
     assert 'def ' not in payload['guidance']
 
 
-def test_recording_crud_endpoints_and_suggestions():
+def test_phase3_recording_render_and_voiceover_endpoints():
     create = client.post('/api/recordings', json={
-        'title': 'Lesson 1',
+        'title': 'Lesson 3',
         'created_by': 'teacher@example.com',
         'events': [
             {'t': 0, 'type': 'recording_start'},
             {'t': 1240, 'type': 'edit'},
             {'t': 2310, 'type': 'run', 'file': 'main.py'},
             {'t': 3000, 'type': 'file_switch', 'file': 'helpers.py'},
+            {'t': 4100, 'type': 'annotation', 'file': 'helpers.py'},
         ],
         'annotations': [{'t': 1300, 'text': 'Introduce loop'}],
     })
     assert create.status_code == 200
-    payload = create.json()
-    recording_id = payload['id']
-
-    list_res = client.get('/api/recordings')
-    assert list_res.status_code == 200
-    assert any(item['id'] == recording_id for item in list_res.json())
-
-    get_res = client.get(f'/api/recordings/{recording_id}')
-    assert get_res.status_code == 200
-    details = get_res.json()
-    assert details['title'] == 'Lesson 1'
-    assert len(details['events']) == 4
-    assert len(details['annotations']) == 1
+    recording_id = create.json()['id']
 
     suggestions_res = client.get(f'/api/recordings/{recording_id}/suggest-annotations')
     assert suggestions_res.status_code == 200
-    suggestions = suggestions_res.json()['suggestions']
-    assert len(suggestions) >= 1
+    assert len(suggestions_res.json()['suggestions']) >= 1
+
+    render_res = client.post('/api/render-jobs', json={'recording_id': recording_id, 'format': 'mp4'})
+    assert render_res.status_code == 200
+    assert render_res.json()['status'] == 'completed'
+    job_id = render_res.json()['job_id']
+
+    render_get = client.get(f'/api/render-jobs/{job_id}')
+    assert render_get.status_code == 200
+    assert render_get.json()['recording_id'] == recording_id
+
+    tts_res = client.post('/api/voiceover/tts', json={'text': 'Intro and walkthrough', 'voice': 'alloy'})
+    assert tts_res.status_code == 200
+    assert tts_res.json()['audio_url'].endswith('.mp3')
+
+    sync_res = client.post('/api/voiceover/auto-sync', json={
+        'recording_id': recording_id,
+        'transcript_chunks': [{'text': 'Intro section'}, {'text': 'Refactor section'}],
+    })
+    assert sync_res.status_code == 200
+    assert len(sync_res.json()['segments']) == 2

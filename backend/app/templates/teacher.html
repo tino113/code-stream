@@ -8,11 +8,15 @@
     <link rel="stylesheet" href="/static/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.52.2/min/vs/loader.min.js"></script>
   </head>
-  <body class="cs-bg">
+  <body class="cs-bg dark-mode">
     <nav class="navbar navbar-dark cs-nav px-3">
       <a class="navbar-brand fw-bold" href="/">CodeStream Teacher IDE</a>
-      <div class="d-flex gap-2">
-        <button class="btn btn-sm btn-outline-light" id="theme-toggle">Toggle Theme</button>
+      <div class="d-flex gap-2 align-items-center">
+        <select class="form-select form-select-sm" id="theme-select" style="width:160px">
+          <option value="dark" selected>Dark</option>
+          <option value="light">Light</option>
+          <option value="contrast">High Contrast</option>
+        </select>
         <select class="form-select form-select-sm" id="font-size" style="width:120px">
           <option value="12">12px</option><option value="14" selected>14px</option><option value="16">16px</option><option value="18">18px</option>
         </select>
@@ -53,9 +57,19 @@
               </div>
 
               <div>
+                <h6 class="fw-bold">Phase 3: Render & Voice</h6>
+                <textarea id="tts-text" class="form-control form-control-sm" rows="3" placeholder="Narration script...">In this section we refactor the greeting function and run tests.</textarea>
+                <div class="d-grid gap-2 mt-2">
+                  <button id="generate-tts" class="btn btn-outline-light btn-sm">Generate TTS</button>
+                  <button id="auto-sync" class="btn btn-outline-light btn-sm">Auto Sync Voiceover</button>
+                  <button id="render-video" class="btn btn-warning btn-sm">Render Video</button>
+                </div>
+              </div>
+
+              <div>
                 <h6 class="fw-bold">Annotations</h6>
                 <input id="annotation-text" class="form-control form-control-sm" placeholder="Checkpoint note" />
-                <button id="add-annotation" class="btn btn-outline-dark btn-sm mt-2 w-100">Add Marker</button>
+                <button id="add-annotation" class="btn btn-outline-light btn-sm mt-2 w-100">Add Marker</button>
               </div>
             </div>
           </div>

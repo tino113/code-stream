@@ -4,6 +4,7 @@ import json
 import re
 import subprocess
 import tempfile
+from uuid import uuid4
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,6 +51,16 @@ class Recording(Base):
     annotations_json = Column(Text, nullable=False, default="[]")
 
 
+class RenderJob(Base):
+    __tablename__ = "render_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recording_id = Column(Integer, nullable=False)
+    status = Column(String, nullable=False, default="queued")
+    format = Column(String, nullable=False, default="mp4")
+    output_url = Column(String, nullable=False, default="")
+
+
 Base.metadata.create_all(bind=engine)
 
 
@@ -80,7 +91,22 @@ class RecordingPayload(BaseModel):
     annotations: list[dict] = []
 
 
-app = FastAPI(title="CodeStream API", version="0.3.0")
+class RenderPayload(BaseModel):
+    recording_id: int
+    format: str = Field(default="mp4", pattern="^(mp4|webm)$")
+
+
+class TtsPayload(BaseModel):
+    text: str = Field(min_length=1, max_length=3000)
+    voice: str = Field(default="alloy", max_length=60)
+
+
+class AutoSyncPayload(BaseModel):
+    recording_id: int
+    transcript_chunks: list[dict]
+
+
+app = FastAPI(title="CodeStream API", version="0.4.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -125,7 +151,7 @@ def sanitize_debug_reply(text: str) -> str:
 
 @app.get("/health")
 def health_check():
-    return {"status": "ok", "phase": 2, "ui": "bootstrap+monaco"}
+    return {"status": "ok", "phase": 3, "ui": "bootstrap+monaco"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -269,3 +295,78 @@ def suggest_annotations(recording_id: int, db: Session = Depends(get_db)):
             )
 
     return {"recording_id": recording_id, "suggestions": suggestions[:10], "source": "heuristic_ai_placeholder"}
+
+
+@app.post("/api/render-jobs")
+def create_render_job(payload: RenderPayload, db: Session = Depends(get_db)):
+    recording = db.query(Recording).filter(Recording.id == payload.recording_id).first()
+    if not recording:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    job = RenderJob(recording_id=payload.recording_id, status="queued", format=payload.format)
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    # phase-3 lightweight pipeline placeholder: mark completed synchronously
+    job.status = "completed"
+    job.output_url = f"https://cdn.codestream.local/renders/{job.id}.{job.format}"
+    db.commit()
+    db.refresh(job)
+
+    return {"job_id": job.id, "status": job.status, "output_url": job.output_url}
+
+
+@app.get("/api/render-jobs/{job_id}")
+def get_render_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(RenderJob).filter(RenderJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Render job not found")
+    return {
+        "job_id": job.id,
+        "recording_id": job.recording_id,
+        "status": job.status,
+        "format": job.format,
+        "output_url": job.output_url,
+    }
+
+
+@app.post("/api/voiceover/tts")
+def synthesize_tts(payload: TtsPayload):
+    # phase-3 API contract placeholder to integrate real providers later
+    audio_id = str(uuid4())
+    return {
+        "audio_id": audio_id,
+        "voice": payload.voice,
+        "duration_seconds": max(2, len(payload.text.split()) // 2),
+        "audio_url": f"https://cdn.codestream.local/voice/{audio_id}.mp3",
+        "provider": "placeholder_tts",
+    }
+
+
+@app.post("/api/voiceover/auto-sync")
+def auto_sync_voiceover(payload: AutoSyncPayload, db: Session = Depends(get_db)):
+    rec = db.query(Recording).filter(Recording.id == payload.recording_id).first()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    events = json.loads(rec.events_json)
+    run_points = [e for e in events if e.get("type") in {"run", "annotation", "file_switch"}]
+    if not run_points:
+        run_points = [{"t": 0, "type": "start", "file": "main.py"}]
+
+    chunks = payload.transcript_chunks or [{"text": "Intro"}]
+    plan = []
+    for i, chunk in enumerate(chunks):
+        anchor = run_points[min(i, len(run_points) - 1)]
+        plan.append(
+            {
+                "chunk_index": i,
+                "text": chunk.get("text", ""),
+                "start_ms": anchor.get("t", 0),
+                "speed": chunk.get("target_speed", 1.0),
+                "anchor_type": anchor.get("type", "start"),
+            }
+        )
+
+    return {"recording_id": payload.recording_id, "segments": plan, "strategy": "event-anchor-alignment-v1"}
